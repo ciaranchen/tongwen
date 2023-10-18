@@ -1,5 +1,9 @@
 lexer grammar TongWenLexer;
 
+options {
+    language    = Python3;
+}
+
 DECLARE                     : '有';
 LET_PRE                     : '以';
 LET_POST                    : '设';
@@ -19,7 +23,7 @@ FUNCTION_DECLARE            : '由';
 CALL_PRE_ARG                : '取';
 CALL_PRE_IT                 : '之';
 CALL_PRE_NUMBER_HINT        : '值';
-CALL_MID_BRANCKET           : '·' | '`' ;
+CALL_MID_ARG                : '使';
 CALL_MID_TO                 : '于';
 RETURN                      : '得';
 
@@ -40,9 +44,51 @@ SEMICOLON                   : ';' | '；';
 
 WS                      : [ \t\r\n]+ -> skip;
 
+INT_PRE_KEYWORDS            : INT_CN_KEYWORDS;
+INT_CN_KEYWORDS             : '零'|'一'|'二'|'三'|'四'|'五'|'六'|'七'|'八'|'九';
+
+// ============= Operator ==============
+
+MathOperator               : PlusOperator | MinusOperator | ProdOperator | DividOperator;
+PlusOperator                : '+';
+MinusOperator               : '-';
+ProdOperator                : '*';
+DividOperator               : '/';
 
 
+MathFunction                : PlusFunction | MinusFunction | ProdFunction | DividFunction;
+PlusFunction                : '加';
+MinusFunction               : '减';
+ProdFunction                : '乘';
+DividFunction               : '除';
 
+
+// ============== Number ===============
+NUMBER
+ : INTEGER;
+
+INTEGER
+ : DECIMAL_INTEGER;
+
+/// decimalinteger ::=  nonzerodigit digit* | "0"+
+DECIMAL_INTEGER
+ : NON_ZERO_DIGIT DIGIT*
+ | '0'+
+ ;
+
+
+/// nonzerodigit   ::=  "1"..."9"
+fragment NON_ZERO_DIGIT
+ : [1-9]
+ ;
+
+/// digit          ::=  "0"..."9"
+fragment DIGIT
+ : [0-9]
+ ;
+
+
+// ============== ID ==============
 
 
 IDENTIFIER              : ID_START ID_CONTINUE*;

@@ -1,5 +1,9 @@
 parser grammar TongWenParser;
-options { tokenVocab=TongWenLexer; }
+options {
+    tokenVocab  = TongWenLexer;
+    language    = Python3;
+    superClass  = TongWenParserBase;
+}
 
 
 program                     : statement* ;
@@ -7,7 +11,8 @@ statement                   : (expr SEMICOLON)
                             | if_statement
                             | for_statement;
 
-expr                        : declare_statement
+expr                        : nature_math_expr
+                            | declare_statement
                             | assign_statement
                             | body_statement
                             | function_define_expr
@@ -15,15 +20,16 @@ expr                        : declare_statement
                             | function_return_statement;
 
 
-condition_statement         : LP data RP;
+wrapped_expr                : LP expr RP;
+condition_statement         : LP data | expr RP;
 body_statement              : LB program RB;
 
 
-declare_statement           : DECLARE ((type TYPE_POSTFIX)? (data ASSIGN)? IDENTIFIER)+;
+declare_statement           : DECLARE ((type TYPE_POSTFIX)? (data ASSIGN)? identifier)+;
 assign_statement            : assign_pre_statement | assign_post_statement | delete_assign_statement;
-assign_pre_statement        : LET_PRE (data ASSIGN IDENTIFIER)+;
-assign_post_statement       : LET_POST (IDENTIFIER ASSIGN data)+;
-delete_assign_statement     : IDENTIFIER NO_MORE;
+assign_pre_statement        : LET_PRE (data ASSIGN identifier)+;
+assign_post_statement       : LET_POST (identifier ASSIGN data)+;
+delete_assign_statement     : identifier NO_MORE;
 
 if_statement                : IF condition_statement body_statement (ELSEIF condition_statement body_statement)? (ELSE body_statement)?;
 
@@ -36,12 +42,17 @@ i_assign_expr                : (type TYPE_POSTFIX)? (data ASSIGN)? IDENTIFIER;
 
 function_define_expr        : FUNCTION_DECLARE LP ((i_assign_expr COMMA)* i_assign_expr)? RP body_statement;
 function_call_expr          : function_call_pre_expr | function_call_mid_expr | function_call_post_expr;
-function_call_pre_expr      : CALL_PRE_ARG (data COMMA)* data (NUMBER CALL_PRE_NUMBER_HINT)? function_name CALL_PRE_IT;
-function_call_mid_expr      : CALL_MID_BRANCKET data function_name CALL_MID_TO data;
+function_call_pre_expr      : CALL_PRE_ARG (data COMMA)* data (INT_PRE_KEYWORDS CALL_PRE_NUMBER_HINT)? function_name CALL_PRE_IT;
+function_call_mid_expr      : CALL_MID_ARG data function_name CALL_MID_TO (data | (LP ((data COMMA)* data)? RP));
 function_call_post_expr     : function_name LP ((data COMMA)* data)? RP;
 function_return_statement   : RETURN data;
 
 
-data                        : STRING_LITERAL | IDENTIFIER | expr;
+nature_math_expr            : data MathOperator data;
+
+
+data                        : STRING_LITERAL | NUMBER | wrapped_expr;
 type                        : INNER_TYPE | IDENTIFIER;
-function_name               : IDENTIFIER;
+function_name               : MathFunction | IDENTIFIER;
+
+identifier                  : {self.isKeyword($text)} .;
