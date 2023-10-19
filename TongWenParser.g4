@@ -8,13 +8,13 @@ options {
 
 program                     : statement* ;
 statement                   : (expr SEMICOLON)
+                            | declare_statement
                             | if_statement
                             | for_statement
                             | body_statement
                             | struct_define_expr;
 
 expr                        : nature_math_expr
-                            | declare_statement
                             | assign_statement
                             | function_define_expr
                             | function_call_expr
@@ -28,12 +28,12 @@ condition_statement         : LP data | expr RP;
 body_statement              : LB program RB;
 
 
-declare_statement           : DECLARE declare_identifier (COMMA declare_identifier)*?;
-declare_identifier          : (type TYPE_POSTFIX)? ((data | expr) ASSIGN)? IDENTIFIER;
+declare_statement           : DECLARE declare_IDENTIFIER (COMMA declare_IDENTIFIER)*?;
+declare_IDENTIFIER          : (type TYPE_POSTFIX)? ((data | expr) ASSIGN)? IDENTIFIER;
 assign_statement            : assign_pre_statement | assign_post_statement | delete_assign_statement;
-assign_pre_statement        : LET_PRE (data ASSIGN identifier)+;
-assign_post_statement       : LET_POST (identifier ASSIGN data)+;
-delete_assign_statement     : identifier NO_MORE;
+assign_pre_statement        : LET_PRE (data ASSIGN IDENTIFIER)+;
+assign_post_statement       : LET_POST (IDENTIFIER ASSIGN data)+;
+delete_assign_statement     : IDENTIFIER NO_MORE;
 
 if_statement                : IF condition_statement body_statement (ELSEIF condition_statement body_statement)? (ELSE body_statement)?;
 
@@ -53,11 +53,8 @@ nature_math_expr            : data MathOperator data;
 function_return_statement   : RETURN data;
 
 struct_define_expr          : STRUCT_DECLARE LB ((type TYPE_POSTFIX)? ((data | expr) ASSIGN)? IDENTIFIER COMMA?)*? RB ASSIGN IDENTIFIER;
-dot_expr                    : data DOT identifier;
+dot_expr                    : data DOT IDENTIFIER;
 
 data                        : STRING_LITERAL | NUMBER | wrapped_expr | IDENTIFIER | BOOL_LITERAL | LP data RP;
 type                        : INNER_TYPE | IDENTIFIER;
 function_name               : MathFunction | IDENTIFIER;
-
-identifier                  : IDENTIFIER;
-
