@@ -20,15 +20,19 @@ OF                          : 'of' | '中';
 WHILE                       : '当';
 
 FUNCTION_DECLARE            : '由';
+FUNCTION_RET_HINT           : '求';
 CALL_PRE_ARG                : '取';
 CALL_PRE_IT                 : '之';
 CALL_PRE_NUMBER_HINT        : '值';
-CALL_MID_ARG                : '使';
+CALL_MID_ARG                : '其';
 CALL_MID_TO                 : '于';
 RETURN                      : '得';
 
+STRUCT_DECLARE              : '合';
+DOT                         : '的';
 
 STRING_LITERAL              : '"' (' '..'~')* '"' | '“' (~'”')* '”';
+BOOL_LITERAL                : TRUE | FALSE;
 TRUE                        : '阳' | ('True');
 FALSE                       : '阴' | ('False');
 
@@ -42,7 +46,8 @@ INNER_TYPE                  : '数' | '言' | '列' | '图' | '集' | '术';
 COMMA                       : ',' | '，';
 SEMICOLON                   : ';' | '；';
 
-WS                      : [ \t\r\n]+ -> skip;
+WS                          : [ \t\r\n]+ -> skip;
+COMMENT                     : '#' ~[\r\n\f]* -> channel(HIDDEN);
 
 INT_PRE_KEYWORDS            : INT_CN_KEYWORDS;
 INT_CN_KEYWORDS             : '零'|'一'|'二'|'三'|'四'|'五'|'六'|'七'|'八'|'九';
