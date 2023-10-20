@@ -9,8 +9,13 @@ Variable = namedtuple('variable', ['type', 'value'])
 
 class TongWenParserVisitorInterpreter(TongWenParserVisitor):
     def __init__(self) -> None:
-        self.vars = defaultdict(None)
+        self.vars = defaultdict(None, **{
+            '加': Variable(type='Function', value=lambda x, y: x + y)
+        })
         super().__init__()
+
+    def get_id(self, name):
+        return None if not self.vars[name] else self.vars[name].value
 
     def visitProgram(self, ctx: TongWenParser.ProgramContext):
         data = None
@@ -46,6 +51,8 @@ class TongWenParserVisitorInterpreter(TongWenParserVisitor):
             return float(ctx.getText())
         elif ctx.STRING_LITERAL():
             return ctx.getText()
+        elif ctx.IDENTIFIER():
+            return self.get_id(ctx.IDENTIFIER().getText())
         # TODO: Id;
 
     def visitDeclare_statement(self, ctx: TongWenParser.Declare_statementContext):
@@ -54,7 +61,6 @@ class TongWenParserVisitorInterpreter(TongWenParserVisitor):
             obj_name, obj_value = self.visitDeclare_identifier(_id)
             # save id obj;
             self.vars[obj_name] = obj_value
-        print(self.vars)
         return None
 
     def visitDeclare_identifier(self, ctx: TongWenParser.Declare_identifierContext):
@@ -64,10 +70,25 @@ class TongWenParserVisitorInterpreter(TongWenParserVisitor):
         _type = self.visitData(ctx.type_()) if ctx.type_() else None
         return var_name, Variable(type=_type, value=value)
 
+    def visitFunction_call_expr(self, ctx: TongWenParser.Function_call_exprContext):
+        if ctx.function_call_pre_expr():
+            return self.visitFunction_call_pre_expr(ctx.function_call_pre_expr())
+        if ctx.function_call_mid_expr():
+            return self.visitFunction_call_mid_expr(ctx.function_call_mid_expr())
+        if ctx.function_call_post_expr():
+            return self.visitFunction_call_post_expr(ctx.function_call_post_expr())
+        return None
+
+    def visitFunction_call_mid_expr(self, ctx: TongWenParser.Function_call_pre_exprContext):
+        function = ctx.function_name().getText()
+        func_var = self.vars[function].value
+        data1, data2 = self.visitData(ctx.data(0)), self.visitData(ctx.data(1))
+        return func_var(data1, data2)
+
 
 def main():
     # input_expression = input("> ")
-    input_expression = "有 3 为 乙, 4 为 甲；"
+    input_expression = "有 3 为 乙, 4 为 甲；其 甲 加 于 乙；"
     input_stream = InputStream(input_expression)
     lexer = TongWenLexer(input_stream)
     tokens = CommonTokenStream(lexer)
