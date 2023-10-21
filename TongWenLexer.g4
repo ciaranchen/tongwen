@@ -5,9 +5,10 @@ options {
 }
 
 DECLARE                     : '有';
-LET_PRE                     : '以';
-LET_POST                    : '设';
+ASSIGN_PRE                  : '以';
+ASSIGN_POST                 : '设';
 ASSIGN                      : '为';
+ASSIGN_ADV                  : '恒';
 NO_MORE                     : '不复';
 TYPE_POSTFIX                : '者';
 
