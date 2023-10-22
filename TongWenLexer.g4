@@ -21,6 +21,7 @@ OF                          : 'of' | '中';
 WHILE                       : '当';
 
 FUNCTION_DECLARE            : '由';
+FUNCTION_ARG_ASSIGN         : '谓';
 FUNCTION_RET_HINT           : '求';
 CALL_PRE_ARG                : '取';
 CALL_PRE_IT                 : '之';

@@ -1,16 +1,13 @@
+import ast
+
 from TongWenParser import TongWenParser
 from TongWenLexer import TongWenLexer
 from TongWenParserVisitor import TongWenParserVisitor
-from TongWenLanguageBase import TongWenLanguageBase, Variable
+from TongWenLanguageBase import TongWenLanguageBase, Variable, FunctionArg, TongWenLambdaVisitor
 from antlr4 import *
 
 
 class TongWenParserVisitorInterpreter(TongWenParserVisitor, TongWenLanguageBase):
-    # Basic Variable
-    def get_id(self, name):
-        var = self.vars.get(name)
-        return var.value if var else None
-
     # Basic Parser Function
     def visitProgram(self, ctx: TongWenParser.ProgramContext):
         data = None
@@ -32,35 +29,8 @@ class TongWenParserVisitorInterpreter(TongWenParserVisitor, TongWenLanguageBase)
             return self.visitNature_math_expr(ctx.nature_math_expr())
         if ctx.function_call_expr():
             return self.visitFunction_call_expr(ctx.function_call_expr())
-        return None
-
-    def visitP_data(self, ctx: TongWenParser.P_dataContext):
-        if ctx.literal():
-            return self.visitLiteral(ctx.literal())
-        elif ctx.IDENTIFIER():
-            return self.get_id(ctx.IDENTIFIER().getText())
-        elif ctx.data():
-            return self.visitData(ctx.data())
-        return None
-
-    def visitData(self, ctx: TongWenParser.DataContext):
-        if ctx.literal():
-            return self.visitLiteral(ctx.literal())
-        elif ctx.IDENTIFIER():
-            return self.get_id(ctx.IDENTIFIER().getText())
-        elif ctx.p_data():
-            return self.visitP_data(ctx.p_data())
-        elif ctx.expr():
-            return self.visitExpr(ctx.expr())
-        return None
-
-    def visitLiteral(self, ctx: TongWenParser.LiteralContext):
-        if ctx.NUMBER():
-            return float(ctx.getText())
-        elif ctx.STRING_LITERAL():
-            return ctx.getText()
-        elif ctx.BOOL_LITERAL():
-            return ctx.BOOL_LITERAL().getText() == "阳"
+        if ctx.function_define_expr():
+            return self.visitFunction_define_expr(ctx.function_define_expr())
         return None
 
     def visitNature_math_expr(self, ctx: TongWenParser.Nature_math_exprContext):
@@ -88,11 +58,37 @@ class TongWenParserVisitorInterpreter(TongWenParserVisitor, TongWenLanguageBase)
         var_name = ctx.IDENTIFIER().getText()
         value = self.visitData(ctx.data()) if ctx.data() else None
         # TODO: 类型推断。
-        _type = self.visitData(ctx.type_()) if ctx.type_() else None
+        _type = self.visitType(ctx.type_()) if ctx.type_() else None
         return var_name, Variable(type=_type, value=value)
 
     def visitFunction_define_expr(self, ctx: TongWenParser.Function_define_exprContext):
-        pass
+        args = ctx.arg_assignment()
+        args_define = [self.visitArg_assignment(arg) for arg in args]
+        lambda_parser = TongWenLambdaVisitor(args_define)
+        body_stmt = lambda_parser.visitProgram(ctx.body_statement().program())
+        func_def = ast.FunctionDef(
+            name="result",
+            args=ast.arguments(args=[ast.arg(arg='_context'), *[ast.arg(arg=arg.name) for arg in args_define]],
+                               vararg=None, kwonlyargs=[], kw_defaults=[], kwarg=None,
+                               defaults=[]),
+            body=body_stmt,
+            decorator_list=[]
+        )
+        ast_tree = ast.Module(body=[func_def])
+        ast.fix_missing_locations(ast_tree)
+        namespace = {}
+        exec(compile(ast_tree, filename='', mode='exec'), namespace)
+        result = namespace['result']
+        print(result)
+        print(result(None, None, None, None))
+        return result
+
+    def visitArg_assignment(self, ctx: TongWenParser.Arg_assignmentContext):
+        arg_name = ctx.IDENTIFIER().getText()
+        arg_default_value = self.visitData(ctx.data()) if ctx.data() else None
+        # TODO: type infer
+        arg_type = self.visitType(ctx.type_()) if ctx.type_() else None
+        return FunctionArg(arg_name, arg_type, arg_default_value)
 
     def visitFunction_call_expr(self, ctx: TongWenParser.Function_call_exprContext):
         if ctx.function_call_pre_expr():
@@ -128,7 +124,9 @@ def main():
     # input_expression = input("> ")
     # with open('../书同文.同文', encoding='utf-8') as fp:
     #     input_expression = fp.read()
-    input_expression = "有 3 为 乙, 4 为 甲；其 甲 加 于 乙；"
+    input_expression = """有 术 者 由（数 者 谓 乙，言 者 谓 丙，言 者 谓 丁）求 数 {
+    得 3；
+} 为 首个参数；"""
     input_stream = InputStream(input_expression)
     lexer = TongWenLexer(input_stream)
     tokens = CommonTokenStream(lexer)

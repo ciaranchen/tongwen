@@ -44,9 +44,9 @@ for_arr_statement           : FOR loop_condition_statement body_statement;
 loop_condition_statement    : LP data ((IN|OF) ASSIGN IDENTIFIER)? RP;
 for_while_statement         : WHILE condition_statement body_statement;
 
-i_assign_expr                : (type TYPE_POSTFIX)? (data ASSIGN)? IDENTIFIER;
+arg_assignment              : ((type TYPE_POSTFIX)? data? FUNCTION_ARG_ASSIGN)? IDENTIFIER;
 
-function_define_expr        : FUNCTION_DECLARE LP ((i_assign_expr COMMA)* i_assign_expr)? RP (FUNCTION_RET_HINT type)? body_statement;
+function_define_expr        : FUNCTION_DECLARE LP ((arg_assignment COMMA)* arg_assignment)? RP (FUNCTION_RET_HINT type)? body_statement;
 function_call_expr          : function_call_pre_expr | function_call_mid_expr | function_call_post_expr;
 function_call_pre_expr      : CALL_PRE_ARG (data COMMA)* data (INT_PRE_KEYWORDS CALL_PRE_NUMBER_HINT)? function_name;
 function_call_mid_expr      : CALL_MID_ARG data function_name CALL_MID_TO (data | (LP ((data COMMA)* data)? RP));
