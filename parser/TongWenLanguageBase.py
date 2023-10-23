@@ -67,7 +67,9 @@ class TongWenLanguageBase(TongWenDataVisitor):
         def map_decorator(funcs):
             return {k: Variable(type=v.type, value=primitive_func_decorator(v.value)) for k, v in funcs.items()}
 
-        self.vars = defaultdict(None, **map_decorator(base_math_funcs), **map_decorator(base_logic_funcs),
+        self.vars = defaultdict(None,
+                                **map_decorator(base_math_funcs),
+                                **map_decorator(base_logic_funcs),
                                 **map_decorator(base_comp_funcs))
 
     def get_id(self, name):
@@ -91,6 +93,8 @@ class TongWenLanguageBase(TongWenDataVisitor):
 class TongWenLambdaVisitor(TongWenDataVisitor):
     def __init__(self, args: List[FunctionArg]) -> None:
         super().__init__()
+        self.func_nums = 0
+        self._inner_funcs = []
         self.args = args
 
     def get_literal(self, ctx: TongWenParser.LiteralContext):
@@ -105,17 +109,95 @@ class TongWenLambdaVisitor(TongWenDataVisitor):
     def get_id(self, var_name):
         if var_name in [a.name for a in self.args]:
             return ast.Name(id=var_name, ctx=ast.Load())
-        return ast.Call(func=ast.Attribute(ast.Name(id='_context', ctx=ast.Load()), attr='get', ctx=ast.Load()),
-                        args=[ast.Str(s=var_name)], keywords=[])
+        return ast.Attribute( # _context.get(var_name).value
+            value=ast.Call(
+                func=ast.Attribute(
+                    ast.Name(id='_context', ctx=ast.Load()), attr='get', ctx=ast.Load(), lineno=1),
+                args=[ast.Str(s=var_name, lineno=1)], keywords=[]),
+            attr='value', ctx=ast.Load()
+        )
+
+    def function_call(self, func_var, *param):
+        return ast.Call(func=func_var,
+                        args=[ast.Name(id='_context', ctx=ast.Load()), *param],
+                        keywords=[], lineno=1)
 
     def visitProgram(self, ctx: TongWenParser.ProgramContext):
-        stmts = [self.visitStatement(stmt) for stmt in ctx.children]
-        return stmts
+        res = []
+        for child in ctx.children:
+            stmt = self.visitStatement(child)
+            if len(self._inner_funcs) != 0:
+                res += self._inner_funcs
+                self.func_nums += len(self._inner_funcs)
+                self._inner_funcs.clear()
+            res.append(stmt)
+        return res
 
     def visitStatement(self, ctx: TongWenParser.StatementContext):
         if ctx.function_return_statement():
             return self.visitFunction_return_statement(ctx.function_return_statement())
+        if ctx.expr():
+            return self.visitExpr(ctx.expr())
+        if ctx.data():
+            return self.visitData(ctx.data())
+        return None
+
+    def visitExpr(self, ctx: TongWenParser.ExprContext):
+        if ctx.function_call_expr():
+            return self.visitFunction_call_expr(ctx.function_call_expr())
+        if ctx.function_define_expr():
+            return self.visitFunction_define_expr(ctx.function_define_expr())
+        return None
 
     def visitFunction_return_statement(self, ctx: TongWenParser.Function_return_statementContext):
         return_value = self.visitData(ctx.data()) if ctx.data() else None
-        return ast.Return(return_value)
+        return ast.Return(value=return_value, lineno=1)
+
+    def visitFunction_define_expr(self, ctx: TongWenParser.Function_define_exprContext):
+        args = ctx.arg_assignment()
+        args_define = [self.visitArg_assignment(arg) for arg in args]
+        # 加上此FuncDefine中的args
+        lambda_parser = TongWenLambdaVisitor(args_define + self.args)
+        body_stmt = lambda_parser.visitProgram(ctx.body_statement().program())
+
+        inner_func_name = f'_lambda_{self.func_nums + len(self._inner_funcs)}'
+        func = ast.FunctionDef(
+            name=inner_func_name,
+            args=ast.arguments(
+                args=[
+                    ast.arg(arg='_context', annotation=None),
+                    *[ast.arg(arg=arg.name, annotation=None) for arg in args_define]
+                ],
+                vararg=None, kwonlyargs=[], kw_defaults=[], kwarg=None,
+                defaults=[], lineno=1),
+            body=body_stmt,
+            decorator_list=[]
+        )
+        self._inner_funcs.append(func)
+        return ast.Name(inner_func_name, ctx=ast.Load())
+
+    def visitArg_assignment(self, ctx: TongWenParser.Arg_assignmentContext):
+        arg_name = ctx.IDENTIFIER().getText()
+        arg_default_value = self.visitData(ctx.data()) if ctx.data() else None
+        # TODO: type infer
+        arg_type = self.visitType(ctx.type_()) if ctx.type_() else None
+        return FunctionArg(arg_name, arg_type, arg_default_value)
+
+    def visitFunction_call_expr(self, ctx: TongWenParser.Function_call_exprContext):
+        sub_expr = None
+        if ctx.function_call_pre_expr():
+            sub_expr = ctx.function_call_pre_expr()
+        elif ctx.function_call_mid_expr():
+            sub_expr = ctx.function_call_mid_expr()
+        elif ctx.function_call_post_expr():
+            sub_expr = ctx.function_call_post_expr()
+        func_var = self.visitFunction_name(sub_expr.function_name())
+        all_data = sub_expr.data()
+        values = [self.visitData(data) for data in all_data]
+        return self.function_call(func_var, *values)
+
+    def visitFunction_name(self, ctx: TongWenParser.Function_nameContext):
+        if ctx.p_data():
+            return self.visitP_data(ctx.p_data())
+        else:
+            return self.get_id(ctx.getText())

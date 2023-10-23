@@ -61,4 +61,4 @@ literal                     : STRING_LITERAL | NUMBER | IDENTIFIER | BOOL_LITERA
 p_data                      : IDENTIFIER | literal | LP data RP; // P_data 指在该位置的值若包含表达式应有括号
 data                        : IDENTIFIER | literal | p_data | expr;
 type                        : INNER_TYPE | IDENTIFIER;
-function_name               : MathFunction | IDENTIFIER;
+function_name               : MathFunction | IDENTIFIER | p_data;
