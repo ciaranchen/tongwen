@@ -38,7 +38,7 @@ class TongWenDataVisitor(TongWenParserVisitor):
         raise NotImplementedError
 
 
-class TongWenLanguageBase:
+class TongWenLanguageBase(TongWenDataVisitor):
     def __init__(self) -> None:
         base_math_funcs = {
             '加': Variable(type='PrimitiveFunction', value=lambda x, y: x + y),
@@ -60,14 +60,21 @@ class TongWenLanguageBase:
             '大或等': Variable(type='PrimitiveFunction', value=lambda x, y: x >= y),
             '小或等': Variable(type='PrimitiveFunction', value=lambda x, y: x <= y),
         }
-        self.vars = defaultdict(None, **base_math_funcs, **base_logic_funcs, **base_comp_funcs)
+
+        def primitive_func_decorator(func):
+            return lambda ctx, *x: func(*x)
+
+        def map_decorator(funcs):
+            return {k: Variable(type=v.type, value=primitive_func_decorator(v.value)) for k, v in funcs.items()}
+
+        self.vars = defaultdict(None, **map_decorator(base_math_funcs), **map_decorator(base_logic_funcs),
+                                **map_decorator(base_comp_funcs))
 
     def get_id(self, name):
         var = self.vars.get(name)
         return var.value if var else None
 
-    @staticmethod
-    def get_literal(ctx: TongWenParser.LiteralContext):
+    def get_literal(self, ctx: TongWenParser.LiteralContext):
         if ctx.NUMBER():
             return float(ctx.getText())
         elif ctx.STRING_LITERAL():
@@ -76,8 +83,9 @@ class TongWenLanguageBase:
             return ctx.BOOL_LITERAL().getText() == "阳"
         return None
 
-    def function_call(self, function, args):
-        return
+    def function_call(self, function, *args):
+        result = function(self.vars, *args)
+        return result
 
 
 class TongWenLambdaVisitor(TongWenDataVisitor):
@@ -95,7 +103,10 @@ class TongWenLambdaVisitor(TongWenDataVisitor):
         return None
 
     def get_id(self, var_name):
-        return ast.Call(func=ast.Attribute(ast.Name(id='_context'), 'get'), args=[ast.Str(s=var_name)])
+        if var_name in [a.name for a in self.args]:
+            return ast.Name(id=var_name, ctx=ast.Load())
+        return ast.Call(func=ast.Attribute(ast.Name(id='_context', ctx=ast.Load()), attr='get', ctx=ast.Load()),
+                        args=[ast.Str(s=var_name)], keywords=[])
 
     def visitProgram(self, ctx: TongWenParser.ProgramContext):
         stmts = [self.visitStatement(stmt) for stmt in ctx.children]

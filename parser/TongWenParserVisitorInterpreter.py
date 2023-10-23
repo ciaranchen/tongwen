@@ -2,12 +2,11 @@ import ast
 
 from TongWenParser import TongWenParser
 from TongWenLexer import TongWenLexer
-from TongWenParserVisitor import TongWenParserVisitor
 from TongWenLanguageBase import TongWenLanguageBase, Variable, FunctionArg, TongWenLambdaVisitor
 from antlr4 import *
 
 
-class TongWenParserVisitorInterpreter(TongWenParserVisitor, TongWenLanguageBase):
+class TongWenParserVisitorInterpreter(TongWenLanguageBase):
     # Basic Parser Function
     def visitProgram(self, ctx: TongWenParser.ProgramContext):
         data = None
@@ -44,7 +43,7 @@ class TongWenParserVisitorInterpreter(TongWenParserVisitor, TongWenLanguageBase)
             '*': get_function('乘'),
             '/': get_function('除'),
         }[operator]
-        return operator_func(self.visitData(ctx.p_data(0)), self.visitData(ctx.p_data(1)))
+        return self.function_call(operator_func, self.visitP_data(ctx.p_data(0)), self.visitP_data(ctx.p_data(1)))
 
     def visitDeclare_statement(self, ctx: TongWenParser.Declare_statementContext):
         ids = ctx.declare_left_statement()
@@ -77,10 +76,9 @@ class TongWenParserVisitorInterpreter(TongWenParserVisitor, TongWenLanguageBase)
         ast_tree = ast.Module(body=[func_def])
         ast.fix_missing_locations(ast_tree)
         namespace = {}
+        # print(ast.dump(ast_tree))
         exec(compile(ast_tree, filename='', mode='exec'), namespace)
         result = namespace['result']
-        print(result)
-        print(result(None, None, None, None))
         return result
 
     def visitArg_assignment(self, ctx: TongWenParser.Arg_assignmentContext):
@@ -104,29 +102,29 @@ class TongWenParserVisitorInterpreter(TongWenParserVisitor, TongWenLanguageBase)
         func_var = self.vars.get(function, None).value
         all_data = ctx.data()
         values = [self.visitData(data) for data in all_data]
-        return func_var(*values)
+        return self.function_call(func_var, *values)
 
     def visitFunction_call_mid_expr(self, ctx: TongWenParser.Function_call_pre_exprContext):
         function = ctx.function_name().getText()
         func_var = self.vars.get(function, None).value
         data1, data2 = self.visitData(ctx.data(0)), self.visitData(ctx.data(1))
-        return func_var(data1, data2)
+        return self.function_call(func_var, data1, data2)
 
     def visitFunction_call_post_expr(self, ctx: TongWenParser.Function_call_post_exprContext):
         function = ctx.function_name().getText()
         func_var = self.vars.get(function, None).value
         all_data = ctx.data()
         values = [self.visitData(data) for data in all_data]
-        return func_var(*values)
+        return self.function_call(func_var, *values)
 
 
 def main():
     # input_expression = input("> ")
-    # with open('../书同文.同文', encoding='utf-8') as fp:
-    #     input_expression = fp.read()
-    input_expression = """有 术 者 由（数 者 谓 乙，言 者 谓 丙，言 者 谓 丁）求 数 {
-    得 3；
-} 为 首个参数；"""
+    with open('../书同文.同文', encoding='utf-8') as fp:
+        input_expression = fp.read()
+#     input_expression = """有 术 者 由（数 者 谓 乙，言 者 谓 丙，言 者 谓 丁）求 数 {
+#     得 乙；
+# } 为 首个参数；"""
     input_stream = InputStream(input_expression)
     lexer = TongWenLexer(input_stream)
     tokens = CommonTokenStream(lexer)
