@@ -4,13 +4,14 @@ options {
     language    = Python3;
 }
 
+CONST                       : '恒';
 DECLARE                     : '有';
+DECLARE_ASSIGN              : '名';
 ASSIGN_PRE                  : '以';
 ASSIGN_POST                 : '设';
 ASSIGN                      : '为';
-ASSIGN_ADV                  : '恒';
 NO_MORE                     : '不复';
-TYPE_POSTFIX                : '者';
+TYPE_POSTFIX                : '类';
 
 IF                          : '若';
 ELSEIF                      : '另若';
@@ -20,13 +21,13 @@ IN                          : 'in' | '内';
 OF                          : 'of' | '中';
 WHILE                       : '当';
 
-FUNCTION_DECLARE            : '由';
+LAMBDA_DECLARE              : '由';
 FUNCTION_ARG_ASSIGN         : '谓';
 FUNCTION_RET_HINT           : '求';
 CALL_PRE_ARG                : '取';
 CALL_PRE_IT                 : '之';
-CALL_PRE_NUMBER_HINT        : '值';
-CALL_MID_ARG                : '其';
+CALL_PRE_NUMBER_HINT        : '者';
+CALL_MID_ARG                : '夫';
 CALL_MID_TO                 : '于';
 RETURN                      : '得';
 
@@ -46,6 +47,7 @@ RB                          : '}';
 INNER_TYPE                  : '数' | '言' | '列' | '图' | '集' | '术';
 
 COMMA                       : ',' | '，';
+SERIAL_COMMA                : '、';
 SEMICOLON                   : ';' | '；';
 
 WS                          : [ \t\r\n]+ -> skip;

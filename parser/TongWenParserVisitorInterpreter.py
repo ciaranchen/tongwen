@@ -28,8 +28,8 @@ class TongWenParserVisitorInterpreter(TongWenLanguageBase):
             return self.visitNature_math_expr(ctx.nature_math_expr())
         if ctx.function_call_expr():
             return self.visitFunction_call_expr(ctx.function_call_expr())
-        if ctx.function_define_expr():
-            return self.visitFunction_define_expr(ctx.function_define_expr())
+        if ctx.lambda_expr():
+            return self.visitLambda_expr(ctx.lambda_expr())
         return None
 
     def visitNature_math_expr(self, ctx: TongWenParser.Nature_math_exprContext):
@@ -60,7 +60,7 @@ class TongWenParserVisitorInterpreter(TongWenLanguageBase):
         _type = self.visitType(ctx.type_()) if ctx.type_() else None
         return var_name, Variable(type=_type, value=value)
 
-    def visitFunction_define_expr(self, ctx: TongWenParser.Function_define_exprContext):
+    def visitLambda_expr(self, ctx: TongWenParser.Lambda_exprContext):
         args = ctx.arg_assignment()
         args_define = [self.visitArg_assignment(arg) for arg in args]
         lambda_parser = TongWenLambdaVisitor(args_define)

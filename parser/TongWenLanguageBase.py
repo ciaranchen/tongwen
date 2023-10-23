@@ -145,15 +145,15 @@ class TongWenLambdaVisitor(TongWenDataVisitor):
     def visitExpr(self, ctx: TongWenParser.ExprContext):
         if ctx.function_call_expr():
             return self.visitFunction_call_expr(ctx.function_call_expr())
-        if ctx.function_define_expr():
-            return self.visitFunction_define_expr(ctx.function_define_expr())
+        if ctx.lambda_expr():
+            return self.visitLambda_expr(ctx.lambda_expr())
         return None
 
     def visitFunction_return_statement(self, ctx: TongWenParser.Function_return_statementContext):
         return_value = self.visitData(ctx.data()) if ctx.data() else None
         return ast.Return(value=return_value, lineno=1)
 
-    def visitFunction_define_expr(self, ctx: TongWenParser.Function_define_exprContext):
+    def visitLambda_expr(self, ctx: TongWenParser.Lambda_exprContext):
         args = ctx.arg_assignment()
         args_define = [self.visitArg_assignment(arg) for arg in args]
         # 加上此FuncDefine中的args
