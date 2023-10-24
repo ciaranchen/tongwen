@@ -8,29 +8,52 @@ from antlr4 import *
 
 class TongWenParserVisitorInterpreter(TongWenLanguageBase):
     # Basic Parser Function
-    def visitProgram(self, ctx: TongWenParser.ProgramContext):
-        data = None
-        for stmt in ctx.children:
-            data = self.visitStatement(stmt)
-            # print(data)
-        return data
+    def visitIf_statement(self, ctx: TongWenParser.If_statementContext):
+        condition_stmts = ctx.condition_statement()
+        body_stmts = ctx.body_statement()
+        for cond, body in condition_stmts, body_stmts:
+            condition = self.visitCondition_statement(cond)
+            if condition:
+                self.visitBody_statement(body)
+                break
+        if len(condition_stmts) != len(body_stmts):
+            self.visitBody_statement(body_stmts[-1])
 
-    def visitStatement(self, ctx: TongWenParser.StatementContext):
-        if ctx.expr():
-            return self.visitExpr(ctx.expr())
-        if ctx.data():
-            return self.visitData(ctx.data())
-        if ctx.declare_statement():
-            return self.visitDeclare_statement(ctx.declare_statement())
+    def visitFor_arr_statement(self, ctx: TongWenParser.For_arr_statementContext):
+        raise NotImplementedError
 
-    def visitExpr(self, ctx: TongWenParser.ExprContext):
-        if ctx.nature_math_expr():
-            return self.visitNature_math_expr(ctx.nature_math_expr())
-        if ctx.function_call_expr():
-            return self.visitFunction_call_expr(ctx.function_call_expr())
-        if ctx.lambda_expr():
-            return self.visitLambda_expr(ctx.lambda_expr())
-        return None
+    def visitFor_while_statement(self, ctx: TongWenParser.For_while_statementContext):
+        while True:
+            cond = self.visitCondition_statement(ctx.condition_statement())
+            if cond:
+                # TODO: 实现break语句
+                isBreak = self.visitBody_statement(ctx.body_statement())
+                if isBreak:  # 检测到 break 语句
+                    break
+            else:  # 不满足循环条件退出
+                break
+
+    def visitBody_statement(self, ctx: TongWenParser.Body_statementContext):
+        return self.visitProgram(ctx.program())
+
+    def visitDelete_assign_statement(self, ctx: TongWenParser.Delete_assign_statementContext):
+        # TODO: handle dot expr
+        name = ctx.IDENTIFIER().getText()
+        del self.vars[name]
+
+    def visit_assign_helper(self, ctx):
+        # TODO: handle dot expr
+        data = self.visitData(ctx.data())
+        # TODO: type infer
+        type_ = self.visitType(ctx.type_()) if ctx.type_() else None
+        name = ctx.IDENTIFIER().getText()
+        self.vars[name] = Variable(type=type_, value=data)
+
+    def visitAssign_left_statement(self, ctx: TongWenParser.Assign_left_statementContext):
+        return self.visit_assign_helper(ctx)
+
+    def visitAssign_right_statement(self, ctx: TongWenParser.Assign_right_statementContext):
+        return self.visit_assign_helper(ctx)
 
     def visitNature_math_expr(self, ctx: TongWenParser.Nature_math_exprContext):
         def get_function(function_name):
@@ -70,14 +93,12 @@ class TongWenParserVisitorInterpreter(TongWenLanguageBase):
             args=ast.arguments(
                 args=[
                     ast.arg(arg='_context', annotation=None),
-                    *[ast.arg(arg=arg.name, annotation=None) for arg in args_define]
-                ],
-                vararg=None, kwonlyargs=[], kw_defaults=[], kwarg=None,
-                defaults=[]),
+                    *[ast.arg(arg=arg.name, annotation=None) for arg in args_define]],
+                vararg=None, kwonlyargs=[], kw_defaults=[], kwarg=None, posonlyargs=[], defaults=[]),
             body=body_stmt,
             decorator_list=[],
         )
-        ast_tree = ast.Module(body=[func_def])
+        ast_tree = ast.Module(body=[func_def], type_ignores=[])
         ast.fix_missing_locations(ast_tree)
         namespace = {}
         print(ast.dump(ast_tree))
@@ -92,24 +113,26 @@ class TongWenParserVisitorInterpreter(TongWenLanguageBase):
         arg_type = self.visitType(ctx.type_()) if ctx.type_() else None
         return FunctionArg(arg_name, arg_type, arg_default_value)
 
-    def visitFunction_call_expr(self, ctx: TongWenParser.Function_call_exprContext):
-        sub_expr = None
-        if ctx.function_call_pre_expr():
-            sub_expr = ctx.function_call_pre_expr()
-        elif ctx.function_call_mid_expr():
-            sub_expr = ctx.function_call_mid_expr()
-        elif ctx.function_call_post_expr():
-            sub_expr = ctx.function_call_post_expr()
-        func_var = self.visitFunction_name(sub_expr.function_name())
-        all_data = sub_expr.data()
+    def visit_func_call_helper(self, ctx):
+        func_var = self.visitFunction_name(ctx.function_name())
+        all_data = ctx.data()
         values = [self.visitData(data) for data in all_data]
         return self.function_call(func_var, *values)
+
+    def visitFunction_call_pre_expr(self, ctx: TongWenParser.Function_call_pre_exprContext):
+        return self.visit_func_call_helper(ctx)
+
+    def visitFunction_call_mid_expr(self, ctx: TongWenParser.Function_call_mid_exprContext):
+        return self.visit_func_call_helper(ctx)
+
+    def visitFunction_call_post_expr(self, ctx: TongWenParser.Function_call_post_exprContext):
+        return self.visit_func_call_helper(ctx)
 
     def visitFunction_name(self, ctx: TongWenParser.Function_nameContext):
         if ctx.p_data():
             return self.visitP_data(ctx.p_data())
         else:
-            # TODO: fix this.
+            # TODO: fix thi
             return self.get_id(ctx.getText())
 
 

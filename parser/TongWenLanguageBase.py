@@ -10,7 +10,6 @@ FunctionArg = namedtuple('FunctionArg', ['name', 'type', 'value'])
 
 
 class TongWenDataVisitor(TongWenParserVisitor):
-
     def visitP_data(self, ctx: TongWenParser.P_dataContext):
         if ctx.literal():
             return self.get_literal(ctx.literal())
@@ -109,7 +108,7 @@ class TongWenLambdaVisitor(TongWenDataVisitor):
     def get_id(self, var_name):
         if var_name in [a.name for a in self.args]:
             return ast.Name(id=var_name, ctx=ast.Load())
-        return ast.Attribute( # _context.get(var_name).value
+        return ast.Attribute(  # _context.get(var_name).value
             value=ast.Call(
                 func=ast.Attribute(
                     ast.Name(id='_context', ctx=ast.Load()), attr='get', ctx=ast.Load(), lineno=1),
@@ -133,22 +132,6 @@ class TongWenLambdaVisitor(TongWenDataVisitor):
             res.append(stmt)
         return res
 
-    def visitStatement(self, ctx: TongWenParser.StatementContext):
-        if ctx.function_return_statement():
-            return self.visitFunction_return_statement(ctx.function_return_statement())
-        if ctx.expr():
-            return self.visitExpr(ctx.expr())
-        if ctx.data():
-            return self.visitData(ctx.data())
-        return None
-
-    def visitExpr(self, ctx: TongWenParser.ExprContext):
-        if ctx.function_call_expr():
-            return self.visitFunction_call_expr(ctx.function_call_expr())
-        if ctx.lambda_expr():
-            return self.visitLambda_expr(ctx.lambda_expr())
-        return None
-
     def visitFunction_return_statement(self, ctx: TongWenParser.Function_return_statementContext):
         return_value = self.visitData(ctx.data()) if ctx.data() else None
         return ast.Return(value=return_value, lineno=1)
@@ -168,8 +151,7 @@ class TongWenLambdaVisitor(TongWenDataVisitor):
                     ast.arg(arg='_context', annotation=None),
                     *[ast.arg(arg=arg.name, annotation=None) for arg in args_define]
                 ],
-                vararg=None, kwonlyargs=[], kw_defaults=[], kwarg=None,
-                defaults=[], lineno=1),
+                vararg=None, kwonlyargs=[], kw_defaults=[], kwarg=None, posonlyargs=[], defaults=[]),
             body=body_stmt,
             decorator_list=[]
         )

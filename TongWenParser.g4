@@ -32,9 +32,10 @@ declare_left_statement      : (type TYPE_POSTFIX)? (data)? DECLARE_ASSIGN IDENTI
 assign_statement            : (assign_pre_statement | assign_post_statement | delete_assign_statement)  SEMICOLON;
 assign_pre_statement        : ASSIGN_PRE assign_left_statement (COMMA assign_left_statement)*?;
 assign_post_statement       : ASSIGN_POST assign_right_statement (COMMA assign_right_statement)*?;
-delete_assign_statement     : IDENTIFIER NO_MORE;
-assign_left_statement       : (type TYPE_POSTFIX)? (data) ASSIGN IDENTIFIER;
-assign_right_statement      : IDENTIFIER ASSIGN (type TYPE_POSTFIX)? (data);
+delete_assign_statement     : (IDENTIFIER | dot_expr) NO_MORE;
+// 除了Id赋值还应可以给Attr赋值
+assign_left_statement       : (type TYPE_POSTFIX)? (data) ASSIGN (IDENTIFIER | dot_expr);
+assign_right_statement      : (IDENTIFIER | dot_expr) ASSIGN (type TYPE_POSTFIX)? (data);
 
 
 if_statement                : IF condition_statement body_statement (ELSEIF condition_statement body_statement)? (ELSE body_statement)?;
