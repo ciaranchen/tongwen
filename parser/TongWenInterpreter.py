@@ -132,8 +132,33 @@ class TongWenInterpreter(TongWenLanguageBase):
         if ctx.p_data():
             return self.visitP_data(ctx.p_data())
         else:
-            # TODO: fix thi
+            # TODO: fix this
             return self.get_id(ctx.getText())
+
+    def visitStruct_define_statement(self, ctx: TongWenParser.Struct_define_statementContext):
+        struct_name = ctx.IDENTIFIER().getText()
+        defines = [self.visitStruct_def_sub_stmt(stmt) for stmt in ctx.struct_def_sub_stmt()]
+        self.structs[struct_name] = {d.name: d for d in defines}
+
+    def visitStruct_def_sub_stmt(self, ctx: TongWenParser.Struct_def_sub_stmtContext):
+        arg_name = ctx.IDENTIFIER().getText()
+        arg_default_value = self.visitData(ctx.data()) if ctx.data() else None
+        # TODO: type infer
+        arg_type = self.visitType(ctx.type_()) if ctx.type_() else None
+        return FunctionArg(arg_name, arg_type, arg_default_value)
+
+    def visitNew_struct_expr(self, ctx: TongWenParser.New_struct_exprContext):
+        struct_name = ctx.IDENTIFIER().getText()
+        struct_type = self.structs[struct_name]
+        res = {arg.name: arg.value for arg in struct_type.values() if arg.value is not None}
+        for k, v in [self.visitStruct_initial_statement(stmt) for stmt in ctx.struct_initial_statement()]:
+            res[k] = v
+        return res
+
+    def visitStruct_initial_statement(self, ctx: TongWenParser.Struct_initial_statementContext):
+        name = ctx.IDENTIFIER().getText()
+        value = self.visitData(ctx.data())
+        return name, value
 
 
 def main():

@@ -25,14 +25,15 @@ LAMBDA_DECLARE              : '由';
 FUNCTION_ARG_ASSIGN         : '谓';
 FUNCTION_RET_HINT           : '求';
 CALL_PRE_ARG                : '取';
-CALL_PRE_IT                 : '之';
 CALL_PRE_NUMBER_HINT        : '者';
 CALL_MID_ARG                : '夫';
 CALL_MID_TO                 : '于';
 RETURN                      : '得';
 
 STRUCT_DECLARE              : '合';
-DOT                         : '的';
+STRUCT_NEW                  : '实现';
+STRUCT_CONTAIN              : '含';
+DOT                         : '之';
 
 STRING_LITERAL              : '"' (' '..'~')* '"' | '“' (~'”')* '”';
 BOOL_LITERAL                : TRUE | FALSE;

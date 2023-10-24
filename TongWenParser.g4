@@ -15,11 +15,12 @@ statement                   : (expr SEMICOLON)
                             | for_statement
                             | body_statement
                             | function_return_statement
-                            | struct_define_expr;
+                            | struct_define_statement;
 
 expr                        : nature_math_expr
                             | lambda_expr
                             | function_call_expr
+                            | new_struct_expr
                             | dot_expr;
 
 
@@ -54,7 +55,10 @@ function_call_post_expr     : function_name LP ((data COMMA)* data)? RP;
 nature_math_expr            : p_data MathOperator p_data;
 function_return_statement   : RETURN data SEMICOLON;
 
-struct_define_expr          : STRUCT_DECLARE LB ((type TYPE_POSTFIX)? ((data | expr) ASSIGN)? IDENTIFIER COMMA?)*? RB ASSIGN IDENTIFIER;
+struct_define_statement     : STRUCT_DECLARE IDENTIFIER DECLARE LB (struct_def_sub_stmt COMMA?)*? RB;
+struct_def_sub_stmt         : (type TYPE_POSTFIX) (data)? DECLARE_ASSIGN IDENTIFIER;
+new_struct_expr             : STRUCT_NEW IDENTIFIER STRUCT_CONTAIN (LB (struct_initial_statement COMMA?)*? RB)?;
+struct_initial_statement    : data ASSIGN IDENTIFIER;
 dot_expr                    : p_data DOT IDENTIFIER;
 
 literal                     : STRING_LITERAL | NUMBER | IDENTIFIER | BOOL_LITERAL;

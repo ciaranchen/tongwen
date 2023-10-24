@@ -70,6 +70,7 @@ class TongWenLanguageBase(TongWenDataVisitor):
                                 **map_decorator(base_math_funcs),
                                 **map_decorator(base_logic_funcs),
                                 **map_decorator(base_comp_funcs))
+        self.structs = {}
 
     def get_id(self, name):
         var = self.vars.get(name)
