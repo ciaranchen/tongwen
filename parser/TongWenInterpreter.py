@@ -6,7 +6,7 @@ from TongWenLanguageBase import TongWenLanguageBase, Variable, FunctionArg, Tong
 from antlr4 import *
 
 
-class TongWenParserVisitorInterpreter(TongWenLanguageBase):
+class TongWenInterpreter(TongWenLanguageBase):
     # Basic Parser Function
     def visitIf_statement(self, ctx: TongWenParser.If_statementContext):
         condition_stmts = ctx.condition_statement()
@@ -137,12 +137,9 @@ class TongWenParserVisitorInterpreter(TongWenLanguageBase):
 
 
 def main():
-    # input_expression = input("> ")
-    with open('../书同文.同文', encoding='utf-8') as fp:
-        input_expression = fp.read()
-    #     input_expression = """有 术 者 由（数 者 谓 乙，言 者 谓 丙，言 者 谓 丁）求 数 {
-    #     得 乙；
-    # } 为 首个参数；"""
+    input_expression = input("> ")
+    # with open('./书同文.同文', encoding='utf-8') as fp:
+    #     input_expression = fp.read()
     input_stream = InputStream(input_expression)
     lexer = TongWenLexer(input_stream)
     tokens = CommonTokenStream(lexer)
@@ -150,10 +147,11 @@ def main():
     tree = parser.program()
     print(tree.toStringTree(recog=parser))
 
-    visitor = TongWenParserVisitorInterpreter()
+    visitor = TongWenInterpreter()
     result = visitor.visit(tree)
     print(result)
 
 
 if __name__ == '__main__':
-    main()
+    while True:
+        main()
