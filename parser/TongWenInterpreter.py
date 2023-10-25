@@ -37,17 +37,32 @@ class TongWenInterpreter(TongWenLanguageBase):
         return self.visitProgram(ctx.program())
 
     def visitDelete_assign_statement(self, ctx: TongWenParser.Delete_assign_statementContext):
-        # TODO: handle dot expr
-        name = ctx.IDENTIFIER().getText()
-        del self.vars[name]
+        if ctx.IDENTIFIER():
+            name = ctx.IDENTIFIER().getText()
+            del self.vars[name]
+        if ctx.dot_expr():
+            # TODO: handle dot expr
+            data = self.visitP_data(ctx.dot_expr().p_data())
+            name = ctx.dot_expr().IDENTIFIER().getText()
+            if data:
+                del data[name]
+        return None
 
     def visit_assign_helper(self, ctx):
-        # TODO: handle dot expr
         data = self.visitData(ctx.data())
         # TODO: type infer
         type_ = self.visitType(ctx.type_()) if ctx.type_() else None
-        name = ctx.IDENTIFIER().getText()
-        self.vars[name] = Variable(type=type_, value=data)
+        value = Variable(type=type_, value=data)
+        if ctx.IDENTIFIER():
+            name = ctx.IDENTIFIER().getText()
+            self.vars[name] = value
+        elif ctx.dot_expr():
+            dot_data = self.visitP_data(ctx.dot_expr().p_data())
+            name = ctx.dot_expr().IDENTIFIER().getText()
+            if dot_data and isinstance(dot_data, dict):
+                # TODO: 检查类型
+                dot_data[name] = data
+        return None
 
     def visitAssign_left_statement(self, ctx: TongWenParser.Assign_left_statementContext):
         return self.visit_assign_helper(ctx)
@@ -159,6 +174,13 @@ class TongWenInterpreter(TongWenLanguageBase):
         name = ctx.IDENTIFIER().getText()
         value = self.visitData(ctx.data())
         return name, value
+
+    def visitDot_expr(self, ctx: TongWenParser.Dot_exprContext):
+        data = self.visitP_data(ctx.p_data())
+        name = ctx.IDENTIFIER().getText()
+        if data and hasattr(data, name):
+            return data.get(name)
+        return None
 
 
 def main():
