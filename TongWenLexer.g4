@@ -24,7 +24,7 @@ WHILE                       : '当';
 LAMBDA_DECLARE              : '由';
 FUNCTION_ARG_ASSIGN         : '谓';
 FUNCTION_RET_HINT           : '求';
-CALL_PRE_ARG                : '取';
+CALL_PRE_ARG                : '使';
 CALL_PRE_NUMBER_HINT        : '者';
 CALL_MID_ARG                : '夫';
 CALL_MID_TO                 : '于';
